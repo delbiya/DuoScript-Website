@@ -2,52 +2,73 @@
 
 import React, { useState, useRef } from 'react';
 import Editor from '@monaco-editor/react';
-import { Play,  RotateCcw, Download, Copy, Settings } from 'lucide-react';
+import { Play, RotateCcw, Download, Copy, Settings } from 'lucide-react';
+import * as Babel from '@babel/standalone';
 import Navbar from './Navbar';
 
 const Playground: React.FC = () => {
   const [code, setCode] = useState<string>(`// Welcome to DuoScript Playground! 
 // Try writing some code with DuoScript features:
-console.log("Hello Guys") ;
-
-
-
+const a: number = 5;
+console.log(a);
 `);
   const [output, setOutput] = useState<string>('');
   const [isRunning, setIsRunning] = useState<boolean>(false);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
-  
+
   const editorRef = useRef<any>(null);
 
   const executeCode = () => {
     setIsRunning(true);
     setOutput('');
-    
+
     try {
       const logs: string[] = [];
       const originalConsoleLog = console.log;
-      
+
       console.log = (...args) => {
-        logs.push(args.map(arg => typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)).join(' '));
+        logs.push(args.map(arg => (typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg))).join(' '));
       };
-      
-      new Function(editorRef.current?.getValue() || '')();
-      
-      setOutput(logs.join('\n'));
+
+      // Get the editor content
+      const userCode = editorRef.current?.getValue() || '';
+
+      // Transpile TypeScript/DuoScript to JavaScript using Babel
+      let transpiledCode = '';
+      try {
+        transpiledCode = Babel.transform(userCode, {
+          presets: ['typescript'],
+          filename: 'duoscript.ts' // Fix: Explicit filename to avoid Babel error
+        }).code || '';
+      } catch (transpileError) {
+        setOutput(`Syntax Error: ${transpileError instanceof Error ? transpileError.message : 'Unknown syntax error'}`);
+        return;
+      }
+
+      // Execute the transpiled code
+      try {
+        new Function(transpiledCode)();
+        setOutput(logs.join('\n'));
+      } catch (runtimeError) {
+        setOutput(`Runtime Error: ${runtimeError instanceof Error ? runtimeError.message : 'Unknown runtime error'}`);
+      }
+
       console.log = originalConsoleLog;
-    } catch (error) {
-      setOutput(`Runtime Error: ${error instanceof Error ? error.message : 'An unknown error occurred'}`);
     } finally {
       setIsRunning(false);
     }
   };
 
   const resetCode = () => {
-    setCode(`// Welcome to DuoScript Playground! \n// Try writing some code with DuoScript features:\n\n: console.log("Hello Guys") ;`);
+    setCode(`// Welcome to DuoScript Playground! 
+// Try writing some code with DuoScript features:
+const a: number = 5;
+console.log(a);
+`);
   };
 
   const toggleTheme = () => {
-    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+    setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
   };
 
   const copyCode = () => {
@@ -65,13 +86,15 @@ console.log("Hello Guys") ;
     document.body.removeChild(element);
   };
 
-  return  (
+  return (
     <>
       <Navbar />
-      <section id="playground" className={`py-16 ${theme === 'dark' ? 'bg-gray-900' : 'bg-orange-50'}`}> 
+      <section id="playground" className={`py-16 ${theme === 'dark' ? 'bg-gray-900' : 'bg-orange-50'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-6">
-            <h2 className={`text-3xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>DuoScript Playground</h2>
+            <h2 className={`text-3xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>
+              DuoScript Playground
+            </h2>
           </div>
 
           <div className={`rounded-lg shadow-xl overflow-hidden border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-orange-200'}`}>
@@ -99,6 +122,7 @@ console.log("Hello Guys") ;
               value={code}
               theme={theme === 'dark' ? 'vs-dark' : 'light'}
               onMount={(editor) => (editorRef.current = editor)}
+              onChange={(newCode) => setCode(newCode || '')}
             />
 
             <div className="p-4 border-t border-orange-200 bg-gray-100">
