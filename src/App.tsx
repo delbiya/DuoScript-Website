@@ -39,7 +39,7 @@ function HomePage() {
             ⚡DuoScript
             </h1>
             <p className="text-xl text-gray-600 mb-8 max-w-2xl">
-            DuoScript is a scripted,general-purpose programming language, statically typed and mod superset of JavaScript, blending type safety with flexibility.🚀        
+            DuoScript is a scripted,general-purpose programming language, statically typed and mod superset of JavaScript, blending type safety with flexibility.       
                 <p> Catch errors early, write cleaner code, and transpile seamlessly to JavaScript.</p>
 
             Start coding with confidence today! 🔥💻            </p>
